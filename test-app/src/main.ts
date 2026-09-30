@@ -467,7 +467,7 @@ function renderExpertList(experts: ExpertResult[]) {
     .slice(0, 3)
     .map(
       (result, index) => `
-        <li class="person-card ${index === 0 ? 'is-highlighted' : ''}">
+        <li class="person-card ${index === 0 ? 'is-highlighted' : ''}" style="--result-delay:${500 + index * 240}ms">
           <div class="person-header">
             <div>
               <p class="rank">#${index + 1}</p>
