@@ -1,0 +1,58 @@
+[
+  {
+    "id": "doc-belgian-payroll",
+    "title": "Belgian Payroll Compliance Checklist",
+    "topic": "Payroll",
+    "keywords": ["belgium", "payroll", "compliance", "tax", "social security"],
+    "owner": "Sarah Jacobs"
+  },
+  {
+    "id": "doc-sap-payroll-rules",
+    "title": "SAP Payroll Configuration Guide",
+    "topic": "Systems",
+    "keywords": ["sap", "payroll", "configuration", "rules", "integration"],
+    "owner": "Sarah Jacobs"
+  },
+  {
+    "id": "doc-social-security",
+    "title": "Belgian Social Security Update",
+    "topic": "Compliance",
+    "keywords": ["social security", "belgium", "payroll", "benefits"],
+    "owner": "Sarah Jacobs"
+  },
+  {
+    "id": "doc-eu-tax-rules",
+    "title": "EU Tax Rules Summary",
+    "topic": "Tax",
+    "keywords": ["tax", "eu", "belgium", "regulation"],
+    "owner": "Priya Nair"
+  },
+  {
+    "id": "doc-work-council-guidance",
+    "title": "Works Council Guidance for Payroll Changes",
+    "topic": "Policy",
+    "keywords": ["policy", "payroll", "works council", "legal"],
+    "owner": "Priya Nair"
+  },
+  {
+    "id": "doc-data-private",
+    "title": "Payroll Data Privacy Recommendations",
+    "topic": "Data",
+    "keywords": ["data", "privacy", "payroll", "security"],
+    "owner": "Daniel Kim"
+  },
+  {
+    "id": "doc-finance-process",
+    "title": "Payroll Process Re-design Notes",
+    "topic": "Operations",
+    "keywords": ["payroll", "process", "automation", "workflow"],
+    "owner": "Lucas Weber"
+  },
+  {
+    "id": "doc-border-tax-guide",
+    "title": "Cross-border Tax Guidance",
+    "topic": "Tax",
+    "keywords": ["cross-border", "tax", "compliance", "regulation"],
+    "owner": "Elena Rossi"
+  }
+]

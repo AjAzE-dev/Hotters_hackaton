@@ -1,0 +1,44 @@
+[
+  {
+    "id": "project-payroll-be",
+    "name": "Belgian Payroll Modernization",
+    "domain": "Payroll",
+    "keywords": ["payroll", "belgium", "compliance", "tax", "social security"],
+    "team": ["Sarah Jacobs", "Priya Nair", "Lucas Weber"]
+  },
+  {
+    "id": "project-sap-hr",
+    "name": "SAP HR Transformation",
+    "domain": "HR Systems",
+    "keywords": ["sap", "hr", "payroll", "workflow", "integration"],
+    "team": ["Sarah Jacobs", "Daniel Kim"]
+  },
+  {
+    "id": "project-eu-tax",
+    "name": "EU Tax Compliance Review",
+    "domain": "Tax",
+    "keywords": ["tax", "belgium", "europe", "compliance", "regulation"],
+    "team": ["Priya Nair", "Elena Rossi"]
+  },
+  {
+    "id": "project-global-payroll",
+    "name": "Global Payroll Harmonization",
+    "domain": "Payroll",
+    "keywords": ["payroll", "global", "reports", "automation", "process"],
+    "team": ["Daniel Kim", "Lucas Weber", "Elena Rossi"]
+  },
+  {
+    "id": "project-finance-automation",
+    "name": "Finance Automation Program",
+    "domain": "Automation",
+    "keywords": ["automation", "reporting", "finance", "workflow", "process"],
+    "team": ["Lucas Weber"]
+  },
+  {
+    "id": "project-cross-border",
+    "name": "Cross-border Payroll Controls",
+    "domain": "Risk",
+    "keywords": ["cross-border", "risk", "tax", "compliance", "payroll"],
+    "team": ["Elena Rossi"]
+  }
+]

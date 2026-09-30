@@ -1,0 +1,57 @@
+[
+  {
+    "id": "emp-sarah",
+    "name": "Sarah Jacobs",
+    "role": "Payroll Compliance Lead",
+    "department": "Finance Operations",
+    "skills": ["Payroll", "Belgium", "Compliance", "SAP", "Labor law"],
+    "projects": ["project-payroll-be", "project-sap-hr", "project-eu-tax"],
+    "documents": ["doc-belgian-payroll", "doc-sap-payroll-rules", "doc-social-security"],
+    "currentFocus": "Belgian payroll modernization and regulatory compliance",
+    "activity": "Active in the last 30 days"
+  },
+  {
+    "id": "emp-daniel",
+    "name": "Daniel Kim",
+    "role": "Global HR Systems Manager",
+    "department": "People Operations",
+    "skills": ["HRIS", "Payroll", "Data privacy", "Workday", "Analytics"],
+    "projects": ["project-sap-hr", "project-global-payroll", "project-hr-data"],
+    "documents": ["doc-payroll-data-model", "doc-hris-upgrade", "doc-data-private"],
+    "currentFocus": "HR system architecture and payroll integration",
+    "activity": "Last active 12 days ago"
+  },
+  {
+    "id": "emp-priya",
+    "name": "Priya Nair",
+    "role": "Employment Law Partner",
+    "department": "Legal",
+    "skills": ["Employment law", "Belgium", "Compliance", "Risk management", "Policy"],
+    "projects": ["project-payroll-be", "project-eu-tax", "project-works-council"],
+    "documents": ["doc-eu-tax-rules", "doc-work-council-guidance", "doc-policy-risk"],
+    "currentFocus": "Employment policy design and local compliance risk",
+    "activity": "Active in the last 18 days"
+  },
+  {
+    "id": "emp-lucas",
+    "name": "Lucas Weber",
+    "role": "Finance Transformation Lead",
+    "department": "Finance",
+    "skills": ["Process design", "Accounting", "Payroll", "Automation", "Reporting"],
+    "projects": ["project-global-payroll", "project-finance-automation", "project-payroll-be"],
+    "documents": ["doc-finance-process", "doc-payroll-automation", "doc-reporting-metrics"],
+    "currentFocus": "Process automation across global payroll workflows",
+    "activity": "Active in the last 9 days"
+  },
+  {
+    "id": "emp-elena",
+    "name": "Elena Rossi",
+    "role": "Senior Tax Specialist",
+    "department": "Tax Strategy",
+    "skills": ["Tax", "Belgium", "Cross-border", "Compliance", "Finance"],
+    "projects": ["project-eu-tax", "project-global-payroll", "project-cross-border"],
+    "documents": ["doc-eu-tax-rules", "doc-border-tax-guide", "doc-tax-compliance"],
+    "currentFocus": "Cross-border tax compliance and reporting",
+    "activity": "Active in the last 21 days"
+  }
+]
