@@ -216,25 +216,60 @@ function renderExpertList(experts: ExpertResult[]) {
     .join('')
 }
 
+function typeIntoElement(selector: string, text: string, speed = 20): void {
+  const element = document.querySelector<HTMLElement>(selector)
+  if (!element) return
+
+  element.textContent = ''
+  let index = 0
+
+  const interval = window.setInterval(() => {
+    element.textContent = text.slice(0, index + 1)
+    index += 1
+
+    if (index >= text.length) {
+      window.clearInterval(interval)
+    }
+  }, speed)
+}
+
+function renderGreeting(): void {
+  const history = document.querySelector<HTMLDivElement>('#chat-history')
+  if (!history) return
+
+  history.innerHTML = `
+    <div class="message bot greeting-message">Hello! I can help you find the right expert for your question.</div>
+  `
+}
+
 function renderChat(question: string, experts: ExpertResult[]) {
   const top = experts[0]
   const history = document.querySelector<HTMLDivElement>('#chat-history')
   if (!history || !top) return
 
   history.innerHTML = `
-    <div class="message bot">
-      I can find the best people for that question based on projects, documents, and recent activity.
-    </div>
+    <div class="message bot greeting-message">Hello! I can help you find the right expert for your question.</div>
     <div class="message user">${escapeHtml(question)}</div>
     <div class="message bot result-box">
       <p class="result-label">Recommended Expert</p>
-      <h2>${escapeHtml(top.employee.name)} <span>(${top.confidence}% confidence)</span></h2>
-      <p class="result-body">${escapeHtml(top.employee.role)} • ${escapeHtml(top.employee.department)}</p>
-      <ul>
+      <h2 class="typed-heading"></h2>
+      <p class="result-body typed-role"></p>
+      <ul class="typed-reasons">
         ${top.reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join('')}
       </ul>
     </div>
   `
+
+  const headingText = `${top.employee.name} (${top.confidence}% confidence)`
+  const roleText = `${top.employee.role} • ${top.employee.department}`
+
+  typeIntoElement('.typed-heading', headingText)
+  typeIntoElement('.typed-role', roleText)
+
+  const reasons = document.querySelectorAll<HTMLLIElement>('.typed-reasons li')
+  reasons.forEach((item, index) => {
+    item.style.animationDelay = `${index * 120}ms`
+  })
 }
 
 function renderInsights(experts: ExpertResult[]) {
@@ -276,7 +311,7 @@ async function initDashboard() {
 
         <div class="quick-prompts" aria-label="Suggested questions">
           <button type="button" class="prompt" data-question="Who knows the most about Belgian payroll compliance?">Belgian payroll compliance</button>
-          <button type="button" class="prompt" data-question="Who is best for SAP payroll and HR process design?">SAP payroll</button>
+          <button type="button" class="prompt" data-question="Who is best for SAP payroll and HR process design?">SAP payroll expertise</button>
           <button type="button" class="prompt" data-question="Who handles employment policy risk in Europe?">Employment policy risk</button>
         </div>
 
@@ -337,6 +372,8 @@ async function initDashboard() {
     if (!question) return
     handleQuestion(question, true)
   })
+
+  renderGreeting()
 }
 
 initDashboard().catch((error) => {
