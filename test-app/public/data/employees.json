@@ -8,7 +8,8 @@
     "projects": ["project-payroll-be", "project-sap-hr", "project-eu-tax"],
     "documents": ["doc-belgian-payroll", "doc-sap-payroll-rules", "doc-social-security"],
     "currentFocus": "Belgian payroll modernization and regulatory compliance",
-    "activity": "Active in the last 30 days"
+    "activity": "Active in the last 30 days",
+    "manager": "Alicia Morgan"
   },
   {
     "id": "emp-daniel",
@@ -19,7 +20,8 @@
     "projects": ["project-sap-hr", "project-global-payroll", "project-hr-data"],
     "documents": ["doc-payroll-data-model", "doc-hris-upgrade", "doc-data-private"],
     "currentFocus": "HR system architecture and payroll integration",
-    "activity": "Last active 12 days ago"
+    "activity": "Last active 12 days ago",
+    "manager": "Alicia Morgan"
   },
   {
     "id": "emp-priya",
@@ -30,7 +32,8 @@
     "projects": ["project-payroll-be", "project-eu-tax", "project-works-council"],
     "documents": ["doc-eu-tax-rules", "doc-work-council-guidance", "doc-policy-risk"],
     "currentFocus": "Employment policy design and local compliance risk",
-    "activity": "Active in the last 18 days"
+    "activity": "Active in the last 18 days",
+    "manager": "Omar Hassan"
   },
   {
     "id": "emp-lucas",
@@ -41,7 +44,8 @@
     "projects": ["project-global-payroll", "project-finance-automation", "project-payroll-be"],
     "documents": ["doc-finance-process", "doc-payroll-automation", "doc-reporting-metrics"],
     "currentFocus": "Process automation across global payroll workflows",
-    "activity": "Active in the last 9 days"
+    "activity": "Active in the last 9 days",
+    "manager": "Alicia Morgan"
   },
   {
     "id": "emp-elena",
@@ -52,6 +56,55 @@
     "projects": ["project-eu-tax", "project-global-payroll", "project-cross-border"],
     "documents": ["doc-eu-tax-rules", "doc-border-tax-guide", "doc-tax-compliance"],
     "currentFocus": "Cross-border tax compliance and reporting",
-    "activity": "Active in the last 21 days"
+    "activity": "Active in the last 21 days",
+    "manager": "Omar Hassan"
+  },
+  {
+    "id": "emp-alicia",
+    "name": "Alicia Morgan",
+    "role": "VP Finance & People Ops",
+    "department": "Executive",
+    "skills": ["Strategy", "Payroll", "Leadership", "Compliance", "Operations"],
+    "projects": ["project-global-payroll", "project-sap-hr", "project-payroll-be"],
+    "documents": ["doc-payroll-governance", "doc-operating-model", "doc-strategy-review"],
+    "currentFocus": "Governance and executive oversight for payroll and people operations",
+    "activity": "Active in the last 5 days",
+    "manager": null
+  },
+  {
+    "id": "emp-omar",
+    "name": "Omar Hassan",
+    "role": "Director of Legal & Risk",
+    "department": "Executive",
+    "skills": ["Legal", "Risk", "Compliance", "Policy", "Leadership"],
+    "projects": ["project-eu-tax", "project-payroll-be", "project-works-council"],
+    "documents": ["doc-risk-briefing", "doc-policy-governance", "doc-legal-overview"],
+    "currentFocus": "Regulatory governance and strategic risk oversight",
+    "activity": "Active in the last 8 days",
+    "manager": null
+  },
+  {
+    "id": "emp-nina",
+    "name": "Nina Patel",
+    "role": "Payroll Operations Analyst",
+    "department": "Finance Operations",
+    "skills": ["Payroll", "Belgium", "Reporting", "Data", "Process"],
+    "projects": ["project-payroll-be", "project-finance-automation"],
+    "documents": ["doc-payroll-runbook", "doc-processing-checklist", "doc-reporting-metrics"],
+    "currentFocus": "Operational payroll processing and process quality",
+    "activity": "Active in the last 16 days",
+    "manager": "Sarah Jacobs"
+  },
+  {
+    "id": "emp-jonas",
+    "name": "Jonas Meier",
+    "role": "Senior Payroll Consultant",
+    "department": "Finance Operations",
+    "skills": ["Payroll", "Belgium", "Compliance", "Process", "Documentation"],
+    "projects": ["project-payroll-be", "project-finance-automation"],
+    "documents": ["doc-payroll-checklist", "doc-documentation", "doc-compliance-notes"],
+    "currentFocus": "Payroll documentation and control design",
+    "activity": "Active in the last 11 days",
+    "manager": "Sarah Jacobs"
   }
 ]
