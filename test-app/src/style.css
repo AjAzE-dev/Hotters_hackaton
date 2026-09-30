@@ -112,6 +112,12 @@ button, input {
   padding-right: 4px;
 }
 
+.chat-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 .message {
   max-width: 92%;
   padding: 14px 16px;
@@ -217,19 +223,23 @@ button, input {
   padding-top: 16px;
 }
 
-.chat-form input {
+.chat-form textarea {
   flex: 1;
-  height: 48px;
+  min-height: 48px;
+  max-height: 156px;
+  resize: none;
+  overflow-y: auto;
   border-radius: 14px;
   border: 1px solid rgba(148, 163, 184, 0.28);
   background: rgba(13, 23, 37, 0.9);
   color: var(--text-strong);
-  padding: 0 16px;
+  padding: 12px 16px;
+  line-height: 1.5;
   outline: none;
 }
 
 .example-question-input {
-  color: rgba(237, 244, 255, 0.6);
+  color: rgba(140, 148, 160, 0.5);
 }
 
 .chat-form button {
