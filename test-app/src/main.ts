@@ -10,6 +10,7 @@ type Employee = {
   documents: string[]
   currentFocus: string
   activity: string
+  manager: string | null
 }
 
 type Project = {
@@ -34,6 +35,18 @@ type ExpertResult = {
   confidence: number
   reasons: string[]
   strongMatchCount: number
+  firstContact?: Employee | null
+  relationship?: string
+}
+
+function getHierarchyScore(role: string): number {
+  const value = role.toLowerCase()
+
+  if (value.includes('vp') || value.includes('director')) return 5
+  if (value.includes('lead') || value.includes('partner') || value.includes('manager')) return 4
+  if (value.includes('senior')) return 3
+  if (value.includes('specialist')) return 2
+  return 1
 }
 
 const defaultQuestion = 'Who has the most experience with Belgian payroll compliance?'
@@ -77,6 +90,7 @@ function findExperts(
   }
 
   const projectMap = new Map(projects.map((project) => [project.id, project]))
+  const employeeMap = new Map(employees.map((employee) => [employee.name, employee]))
 
   const results = employees
     .map((employee) => {
@@ -128,6 +142,11 @@ function findExperts(
         score += projectCount * 8
       }
 
+      const managerMatch = employee.manager && employeeMap.get(employee.manager)
+      if (managerMatch) {
+        score += 5
+      }
+
       const uniqueReasons = Array.from(new Set(reasons)).slice(0, 3)
       const confidence = Math.min(98, Math.max(72, Math.round(score * 2.7)))
 
@@ -140,9 +159,64 @@ function findExperts(
       }
     })
     .filter((result) => result.score >= 28 && result.strongMatchCount >= 1)
+    .map((result) => {
+      const guidance = getBestFirstContact(result.employee, employees)
+
+      return {
+        ...result,
+        firstContact: guidance.firstContact,
+        relationship: guidance.relationship,
+      }
+    })
     .sort((left, right) => right.score - left.score)
 
   return results
+}
+
+function getBestFirstContact(employee: Employee, employees: Employee[]): {
+  firstContact: Employee | null
+  relationship: string
+} {
+  const manager = employee.manager ? employees.find((person) => person.name === employee.manager) ?? null : null
+  if (manager) {
+    return {
+      firstContact: manager,
+      relationship: `${employee.name} reports to ${manager.name}`,
+    }
+  }
+
+  const sameManagerGroup = employees.filter(
+    (person) => person.manager === employee.manager && person.name !== employee.name
+  )
+  if (sameManagerGroup.length > 0) {
+    const seniorPeer = [...sameManagerGroup].sort(
+      (a, b) => getHierarchyScore(b.role) - getHierarchyScore(a.role)
+    )[0]
+
+    return {
+      firstContact: seniorPeer,
+      relationship: `${employee.name} and ${seniorPeer.name} are in the same team. ${seniorPeer.name} is the more senior point of contact.`,
+    }
+  }
+
+  const sameDepartment = employees.filter(
+    (person) => person.department === employee.department && person.name !== employee.name
+  )
+  if (sameDepartment.length > 0) {
+    const seniorPeer = [...sameDepartment].sort(
+      (a, b) => getHierarchyScore(b.role) - getHierarchyScore(a.role)
+    )[0]
+
+    return {
+      firstContact: seniorPeer,
+      relationship: `${employee.name} and ${seniorPeer.name} work in the same department. ${seniorPeer.name} is the best first contact.`,
+    }
+  }
+
+  return {
+    firstContact: null,
+    relationship: 'Independent specialist',
+  }
 }
 
 function buildGraphMarkup(experts: ExpertResult[]): string {
@@ -262,6 +336,10 @@ function renderChat(question: string, experts: ExpertResult[]) {
   const history = document.querySelector<HTMLDivElement>('#chat-history')
   if (!history || !top) return
 
+  const firstContactText = top.firstContact
+    ? `Best first contact: ${top.firstContact.name} — ${top.relationship}`
+    : 'Best first contact: this expert is the most direct match'
+
   const messageBlock = document.createElement('div')
   messageBlock.className = 'chat-thread'
   messageBlock.innerHTML = `
@@ -270,6 +348,7 @@ function renderChat(question: string, experts: ExpertResult[]) {
       <p class="result-label">Recommended Expert</p>
       <h2 class="typed-heading"></h2>
       <p class="result-body typed-role"></p>
+      <p class="result-note">${escapeHtml(firstContactText)}</p>
       <ul class="typed-reasons">
         ${top.reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join('')}
       </ul>

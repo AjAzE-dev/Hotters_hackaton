@@ -177,6 +177,13 @@ button, input {
   color: var(--text-soft);
 }
 
+.result-note {
+  margin: 6px 0 10px;
+  color: #dfe9ff;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
 .result-box ul {
   margin: 0;
   padding-left: 18px;
