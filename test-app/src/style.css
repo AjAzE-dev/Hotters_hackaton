@@ -84,10 +84,14 @@ button, input {
   border-radius: 12px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, var(--primary), #9f73ff);
-  color: white;
-  font-weight: 700;
-  box-shadow: 0 10px 24px rgba(124, 156, 255, 0.4);
+  flex: 0 0 38px;
+}
+
+.brand-mark img {
+  display: block;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }
 
 .brand-title {

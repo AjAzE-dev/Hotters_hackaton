@@ -649,9 +649,11 @@ async function initDashboard() {
     <div class="dashboard-shell">
       <aside class="chat-panel">
         <div class="brand-row">
-          <div class="brand-mark">C</div>
+          <div class="brand-mark">
+            <img src="/matchpoint-mark.png" alt="Matchpoint" />
+          </div>
           <div>
-            <p class="brand-title">Connect</p>
+            <p class="brand-title">Matchpoint</p>
             <span>Expertise discovery</span>
           </div>
         </div>
