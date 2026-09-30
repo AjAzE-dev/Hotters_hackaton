@@ -73,7 +73,15 @@ function normalize(text: string): string {
 }
 
 function extractKeywords(question: string): string[] {
-  const words = normalize(question).split(' ').filter((word) => word.length > 2)
+  const ignoredWords = new Set([
+    'who', 'what', 'when', 'where', 'which', 'why', 'how', 'the', 'and', 'for',
+    'with', 'from', 'about', 'has', 'have', 'had', 'does', 'did', 'is', 'are',
+    'was', 'were', 'most', 'best', 'experience', 'expert', 'experts', 'know',
+    'knows', 'find', 'help', 'please', 'someone', 'can', 'could', 'would'
+  ])
+  const words = normalize(question)
+    .split(' ')
+    .filter((word) => word.length > 2 && !ignoredWords.has(word))
   return Array.from(new Set(words))
 }
 
@@ -97,12 +105,18 @@ function findExperts(
       let score = 0
       const reasons: string[] = []
       let strongMatchCount = 0
+      const matchedKeywords = new Set<string>()
+      const evidenceSignals = new Set<string>()
+      const evidenceSources = new Set<string>()
 
       queryWords.forEach((keyword) => {
         const matchingSkill = employee.skills.find((skill) => normalize(skill).includes(keyword))
         if (matchingSkill) {
           score += 12
           strongMatchCount += 1
+          matchedKeywords.add(keyword)
+          evidenceSignals.add(`${keyword}:skill`)
+          evidenceSources.add('skill')
           reasons.push(`matches ${matchingSkill} expertise`)
         }
 
@@ -112,6 +126,9 @@ function findExperts(
         if (matchingProject) {
           score += 14
           strongMatchCount += 1
+          matchedKeywords.add(keyword)
+          evidenceSignals.add(`${keyword}:project`)
+          evidenceSources.add('project')
           reasons.push(`worked on ${matchingProject.name}`)
         }
 
@@ -123,14 +140,23 @@ function findExperts(
         if (matchingDocument) {
           score += 10
           strongMatchCount += 1
+          matchedKeywords.add(keyword)
+          evidenceSignals.add(`${keyword}:document`)
+          evidenceSources.add('document')
           reasons.push(`documented in ${matchingDocument.title}`)
         }
       })
 
-      const directFocusMatch = employee.currentFocus &&
-        queryWords.some((keyword) => normalize(employee.currentFocus).includes(keyword))
-      if (directFocusMatch) {
+      const matchingFocusKeywords = queryWords.filter((keyword) =>
+        normalize(employee.currentFocus).includes(keyword)
+      )
+      if (matchingFocusKeywords.length > 0) {
         score += 18
+        matchingFocusKeywords.forEach((keyword) => {
+          matchedKeywords.add(keyword)
+          evidenceSignals.add(`${keyword}:focus`)
+        })
+        evidenceSources.add('focus')
         reasons.push('current focus aligns with the question')
       }
 
@@ -148,7 +174,10 @@ function findExperts(
       }
 
       const uniqueReasons = Array.from(new Set(reasons)).slice(0, 3)
-      const confidence = Math.min(98, Math.max(72, Math.round(score * 2.7)))
+      const queryCoverage = matchedKeywords.size / queryWords.length
+      const evidenceStrength = 50 + Math.round(queryCoverage * 30) +
+        Math.min(evidenceSignals.size, 8) * 1.5 + evidenceSources.size * 2
+      const confidence = Math.min(94, Math.max(55, Math.round(evidenceStrength)))
 
       return {
         employee,
@@ -168,7 +197,7 @@ function findExperts(
         relationship: guidance.relationship,
       }
     })
-    .sort((left, right) => right.score - left.score)
+    .sort((left, right) => right.confidence - left.confidence || right.score - left.score)
 
   return results
 }
@@ -220,7 +249,7 @@ function getBestFirstContact(employee: Employee, employees: Employee[]): {
 }
 
 function buildGraphMarkup(experts: ExpertResult[], projects: Project[], question = ''): string {
-  const visibleExperts = experts.slice(0, 5)
+  const visibleExperts = experts.slice(0, 3)
   const queryWords = extractKeywords(question)
   const relevantProjects = projects
     .filter((project) => visibleExperts.some((expert) => expert.employee.projects.includes(project.id)))
@@ -243,12 +272,6 @@ function buildGraphMarkup(experts: ExpertResult[], projects: Project[], question
     .sort((left, right) => right[1] - left[1])
     .slice(0, 4)
     .map(([label]) => label)
-  const projectNodes = topicLabels.map((label, index) => ({
-    x: 430,
-    y: topicLabels.length === 1 ? 180 : 48 + (index * 264) / (topicLabels.length - 1),
-    label
-  }))
-
   const graphExperts = visibleExperts
     .map((expert, originalIndex) => ({
       expert,
@@ -267,6 +290,16 @@ function buildGraphMarkup(experts: ExpertResult[], projects: Project[], question
       return leftTarget - rightTarget || left.originalIndex - right.originalIndex
     })
 
+  const connectedTopicIndexes = topicLabels
+    .map((_, index) => index)
+    .filter((topicIndex) => graphExperts.some((expert) => expert.targetIndex === topicIndex))
+  const projectNodes = connectedTopicIndexes.map((topicIndex, index) => ({
+    topicIndex,
+    x: 430,
+    y: connectedTopicIndexes.length === 1 ? 180 : 48 + (index * 264) / (connectedTopicIndexes.length - 1),
+    label: topicLabels[topicIndex]
+  }))
+
   const graphTop = 48
   const graphBottom = 312
   const expertPositions = graphExperts.map((_, index) => ({
@@ -276,13 +309,16 @@ function buildGraphMarkup(experts: ExpertResult[], projects: Project[], question
       : graphTop + (index * (graphBottom - graphTop)) / (graphExperts.length - 1)
   }))
 
+  const dashPatterns = ['none', '12 6', '7 6', '4 6', '1 5']
   const connections = graphExperts
-    .map(({ targetIndex }, index) => {
+    .map(({ originalIndex, targetIndex }, index) => {
       if (targetIndex < 0) return ''
       const start = expertPositions[index]
-      const end = projectNodes[targetIndex]
+      const end = projectNodes.find((node) => node.topicIndex === targetIndex)
+      if (!end) return ''
       const path = `M ${start.x + 29} ${start.y} C 220 ${start.y}, 320 ${end.y}, ${end.x - 25} ${end.y}`
-      return `<path d="${path}" class="graph-line" />`
+      const dashPattern = dashPatterns[originalIndex] ?? dashPatterns[dashPatterns.length - 1]
+      return `<path d="${path}" class="graph-line" style="stroke-dasharray:${dashPattern}" />`
     })
     .join('')
 
@@ -324,7 +360,7 @@ function renderExpertList(experts: ExpertResult[]) {
   if (!list) return
 
   list.innerHTML = experts
-    .slice(0, 5)
+    .slice(0, 3)
     .map(
       (result, index) => `
         <li class="person-card ${index === 0 ? 'is-highlighted' : ''}">
@@ -426,7 +462,9 @@ function renderInsights(experts: ExpertResult[], projects: Project[], question =
 
   const count = document.querySelector<HTMLSpanElement>('#result-count')
   if (count) {
-    count.textContent = `${experts.length} match${experts.length > 1 ? 'es' : ''}`
+    count.textContent = experts.length > 3
+      ? `Top 3 of ${experts.length} matches`
+      : `${experts.length} match${experts.length === 1 ? '' : 'es'}`
   }
 
   renderExpertList(experts)
@@ -466,20 +504,23 @@ async function initDashboard() {
           <textarea id="question-input" class="example-question-input" name="question" rows="1" placeholder="Ask a question...">${escapeHtml(defaultQuestion)}</textarea>
           <button type="submit">Ask</button>
         </form>
+
+        <section class="knowledge-map" aria-labelledby="knowledge-map-title">
+          <h2 id="knowledge-map-title" class="eyebrow">Knowledge map</h2>
+          <div id="graph-wrap" class="graph-wrap"></div>
+        </section>
       </aside>
 
       <main class="insights-panel">
         <div class="panel-header">
           <div>
-            <p class="eyebrow">Knowledge map</p>
-            <h1>Expert network</h1>
+            <p class="eyebrow">Expert network</p>
+            <h1>Relevant Experts</h1>
           </div>
           <span class="live-pill">Live</span>
         </div>
 
-        <div id="graph-wrap" class="graph-wrap"></div>
-
-        <div class="experts-panel">
+        <div class="experts-panel experts-panel--standalone">
           <div class="section-header">
             <h2>Relevant Experts</h2>
             <span id="result-count">0 matches</span>
