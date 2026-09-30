@@ -1,17 +1,15 @@
-# Problem
- 
-What problem are we solving?
- 
-# Solution
- 
-How does our solution help?
- 
-# Users
- 
-Who benefits?
- 
-# Technical Stack
- 
-- Frontend
-- Backend
-- Database
+Connect: Find the Right Person, Not Just the Right Document
+
+Companies are not short on information. They are short on knowing who has the answer. Expertise is scattered across emails, projects, documents, and conversations, so when employees can't find the right person, they ask around endlessly, interrupt the wrong colleagues, and end up with outdated or incorrect information from people who only seem to know. Hours or even days get lost on questions that one right conversation could solve.
+
+Connect is an AI-powered expertise discovery platform that answers a better question than "where is the document?" It answers: "Who should I talk to?" An employee asks in natural language, for example "Who has the most experience with Belgian payroll compliance?" Connect builds an expertise map from recent activity, tasks, projects, documents, experience, and email traffic. It then identifies the most relevant experts, ranks them with a confidence score, explains why they were selected, and visualizes how people, projects, and knowledge domains relate to each other.
+
+For example, Connect might recommend Sarah Jacobs with 94% confidence, because she led six payroll-related projects, authored three payroll compliance documents, is frequently referenced in payroll discussions, and has been active in the field within the last 30 days. This greatly reduces the time needed to find the right person and removes the risk of getting information from the wrong people.
+
+Connect offers a natural-language chat interface, AI-powered expertise discovery, transparent reasoning and trust indicators, an interactive knowledge network visualization, and confidence scoring based on experience, relevance, and recency.
+
+Connect benefits companies of every size. Small companies can stop asking around endlessly and centralize who knows what in one place. Medium companies get better communication and collaboration between departments. Large companies get smooth international communication, anywhere and anytime, even across time zones.
+
+Technically, the frontend is built with React and Vite. The backend is an API layer that handles LLM-powered query understanding and expertise extraction, for example with Node.js or Python. The database is a graph database that models the links between people, projects, topics, and documents, optionally paired with a vector store for semantic search. The AI layer uses an LLM for query understanding and for explaining its reasoning, the knowledge network is visualized as an interactive graph, and the whole application is deployed on Vercel. (The backend and database details are my suggestions, so replace them with whatever you actually use.)
+
+Our vision is simple: knowledge does not live in documents, knowledge lives in people. Connect makes those people discoverable.
