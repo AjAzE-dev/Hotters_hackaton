@@ -1,6 +1,6 @@
 # Hotters_hackaton
 
-##members
+## members
 -Xander
 -Jonas
 -Ruben
