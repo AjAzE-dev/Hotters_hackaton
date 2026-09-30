@@ -14,5 +14,4 @@ Who benefits?
  
 - Frontend
 - Backend
-- AI
 - Database
