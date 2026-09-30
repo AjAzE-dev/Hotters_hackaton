@@ -271,8 +271,8 @@ button, input {
 
 .knowledge-map .graph-wrap {
   width: 100%;
-  height: 210px;
-  min-height: 210px;
+  height: 260px;
+  min-height: 260px;
   padding: 8px;
   border-radius: 16px;
 }
@@ -339,29 +339,68 @@ button, input {
   stroke-width: 2;
 }
 
-.graph-node {
-  fill: rgba(20, 34, 52, 0.94);
-  stroke: rgba(124, 156, 255, 0.8);
-  stroke-width: 2;
+.graph-team-cluster {
+  fill: rgba(124, 156, 255, 0.035);
+  stroke: rgba(148, 163, 184, 0.2);
+  stroke-width: 1;
 }
 
-.graph-node--primary {
-  fill: rgba(86, 120, 255, 0.45);
-  stroke: rgba(138, 199, 255, 0.9);
+.graph-topic-node {
+  fill: rgba(61, 217, 163, 0.1);
+  stroke: rgba(61, 217, 163, 0.55);
+  stroke-width: 1.2;
+}
+
+.graph-project-node {
+  fill: rgba(124, 156, 255, 0.08);
+  stroke: rgba(124, 156, 255, 0.4);
+  stroke-width: 1.2;
+}
+
+.graph-person-node {
+  fill: none;
   stroke-width: 3;
 }
 
-.graph-node--project {
-  fill: rgba(61, 217, 163, 0.18);
-  stroke: rgba(61, 217, 163, 0.8);
+.graph-confidence-high {
+  stroke: #3dd9a3;
 }
 
-.graph-label,
-.graph-project-label {
-  fill: var(--text-strong);
-  text-anchor: middle;
-  font-size: 11px;
+.graph-confidence-medium {
+  stroke: #ffca6d;
+}
+
+.graph-confidence-low {
+  stroke: #ff7474;
+}
+
+.graph-column-label,
+.graph-team-label {
+  fill: var(--text-soft);
+  font-size: 8px;
   font-weight: 700;
+}
+
+.graph-topic-label,
+.graph-project-label,
+.graph-person-name,
+.graph-person-meta,
+.graph-person-activity {
+  fill: var(--text-strong);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.graph-topic-label,
+.graph-project-label {
+  text-anchor: middle;
+}
+
+.graph-project-label--secondary,
+.graph-person-meta,
+.graph-person-activity {
+  font-size: 7.5px;
+  font-weight: 400;
 }
 
 .experts-panel {

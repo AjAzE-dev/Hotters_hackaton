@@ -72,6 +72,14 @@ function normalize(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
+function keywordsMatch(left: string, right: string): boolean {
+  const normalizedLeft = normalize(left)
+  const normalizedRight = normalize(right)
+  if (normalizedLeft.includes(normalizedRight) || normalizedRight.includes(normalizedLeft)) return true
+  return (normalizedLeft === 'belgian' && normalizedRight === 'belgium') ||
+    (normalizedLeft === 'belgium' && normalizedRight === 'belgian')
+}
+
 function extractKeywords(question: string): string[] {
   const ignoredWords = new Set([
     'who', 'what', 'when', 'where', 'which', 'why', 'how', 'the', 'and', 'for',
@@ -83,6 +91,40 @@ function extractKeywords(question: string): string[] {
     .split(' ')
     .filter((word) => word.length > 2 && !ignoredWords.has(word))
   return Array.from(new Set(words))
+}
+
+function getActivityRecency(activity: string): { score: number | null; label: string } {
+  const exactMatch = activity.match(/(\d+)\s+(day|week|month|year)s?\s+ago/i)
+  const recentMatch = activity.match(/last\s+(\d+)\s+(day|week|month|year)s?/i)
+  const match = exactMatch ?? recentMatch
+  if (!match) return { score: null, label: 'Activity timing unavailable' }
+
+  const amount = Number(match[1])
+  const unit = match[2].toLowerCase()
+  const dayMultipliers: Record<string, number> = { day: 1, week: 7, month: 30, year: 365 }
+  const days = amount * dayMultipliers[unit]
+  const score = Math.round(100 * Math.pow(0.5, days / 180))
+  const label = exactMatch
+    ? `${amount} ${unit}${amount === 1 ? '' : 's'} ago`
+    : `Within ${amount} ${unit}${amount === 1 ? '' : 's'}`
+
+  return { score, label }
+}
+
+function splitSvgLabel(value: string, maxLength = 18): [string, string] {
+  const words = value.split(/\s+/)
+  let firstLine = ''
+  let secondLine = ''
+
+  words.forEach((word) => {
+    if (!secondLine && `${firstLine} ${word}`.trim().length <= maxLength) {
+      firstLine = `${firstLine} ${word}`.trim()
+    } else {
+      secondLine = `${secondLine} ${word}`.trim()
+    }
+  })
+
+  return [firstLine, secondLine]
 }
 
 function findExperts(
@@ -251,106 +293,168 @@ function getBestFirstContact(employee: Employee, employees: Employee[]): {
 function buildGraphMarkup(experts: ExpertResult[], projects: Project[], question = ''): string {
   const visibleExperts = experts.slice(0, 3)
   const queryWords = extractKeywords(question)
-  const relevantProjects = projects
-    .filter((project) => visibleExperts.some((expert) => expert.employee.projects.includes(project.id)))
-    .map((project) => {
-      const supportingExperts = visibleExperts.filter((expert) =>
-        expert.employee.projects.includes(project.id)
-      )
-      const keywordMatches = project.keywords.filter((keyword) =>
-        queryWords.some((word) => normalize(keyword).includes(word) || word.includes(normalize(keyword)))
-      ).length
+  const graphEntries = visibleExperts
+    .map((expert, rank) => {
+      const employeeProjects = projects.filter((project) => expert.employee.projects.includes(project.id))
+      const project = employeeProjects
+        .map((item) => ({
+          item,
+          relevance: item.keywords.filter((keyword) =>
+            queryWords.some((word) => keywordsMatch(keyword, word))
+          ).length
+        }))
+        .sort((left, right) => right.relevance - left.relevance)[0]?.item
+      const matchingTerms = project?.keywords.filter((keyword) =>
+        queryWords.some((word) => keywordsMatch(keyword, word))
+      ) ?? []
+      const topic = queryWords
+        .filter((word) => matchingTerms.some((term) => keywordsMatch(term, word)))
+        .slice(0, 2)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ')
 
-      return { project, supportingExperts, score: supportingExperts.length * 3 + keywordMatches }
+      return {
+        expert,
+        rank,
+        project,
+        topic: topic || project?.domain || 'Expertise',
+        activity: getActivityRecency(expert.employee.activity)
+      }
     })
+    .filter((entry) => entry.project)
+    .sort((left, right) => left.expert.employee.department.localeCompare(right.expert.employee.department) || left.rank - right.rank)
+    .map((entry, index) => ({ ...entry, y: 62 + index * 84 }))
 
-  const topicScores = new Map<string, number>()
-  relevantProjects.forEach(({ project, score }) => {
-    topicScores.set(project.domain, (topicScores.get(project.domain) ?? 0) + score)
+  const departmentGroups = new Map<string, typeof graphEntries>()
+  graphEntries.forEach((entry) => {
+    const department = entry.expert.employee.department
+    const group = departmentGroups.get(department) ?? []
+    group.push(entry)
+    departmentGroups.set(department, group)
   })
-  const topicLabels = [...topicScores.entries()]
-    .sort((left, right) => right[1] - left[1])
-    .slice(0, 4)
-    .map(([label]) => label)
-  const graphExperts = visibleExperts
-    .map((expert, originalIndex) => ({
-      expert,
-      originalIndex,
-      targetIndex: topicLabels.findIndex((label) =>
-        relevantProjects.some(({ project, supportingExperts }) =>
-          project.domain === label && supportingExperts.some((supporter) =>
-            supporter.employee.name === expert.employee.name
-          )
-        )
-      )
-    }))
-    .sort((left, right) => {
-      const leftTarget = left.targetIndex < 0 ? Number.MAX_SAFE_INTEGER : left.targetIndex
-      const rightTarget = right.targetIndex < 0 ? Number.MAX_SAFE_INTEGER : right.targetIndex
-      return leftTarget - rightTarget || left.originalIndex - right.originalIndex
+
+  const teamClusters = Array.from(departmentGroups.entries()).map(([department, members]) => {
+    const firstY = members[0].y
+    const lastY = members[members.length - 1].y
+    return `
+      <rect x="347" y="${firstY - 25}" width="166" height="${lastY - firstY + 50}" rx="12" class="graph-team-cluster" />
+      <text x="354" y="${firstY - 29}" class="graph-team-label">${escapeHtml(department)}</text>
+    `
+  }).join('')
+
+  const topicNodes = new Map<string, { key: string; label: string; y: number }>()
+  graphEntries.forEach((entry) => {
+    const key = normalize(entry.topic)
+    if (!topicNodes.has(key)) topicNodes.set(key, { key, label: entry.topic, y: 0 })
+  })
+  Array.from(topicNodes.values()).forEach((node) => {
+    const linkedEntries = graphEntries.filter((entry) => normalize(entry.topic) === node.key)
+    node.y = linkedEntries.reduce((total, entry) => total + entry.y, 0) / linkedEntries.length
+  })
+
+  const projectNodes = new Map<string, { project: Project; y: number }>()
+  graphEntries.forEach((entry) => {
+    if (entry.project && !projectNodes.has(entry.project.id)) {
+      projectNodes.set(entry.project.id, { project: entry.project, y: 0 })
+    }
+  })
+  Array.from(projectNodes.values()).forEach((node) => {
+    const linkedEntries = graphEntries.filter((entry) => entry.project?.id === node.project.id)
+    node.y = linkedEntries.reduce((total, entry) => total + entry.y, 0) / linkedEntries.length
+  })
+
+  const dashPatterns = ['none', '12 6', '7 6']
+  const dashStyle = (rank: number) => `stroke-dasharray:${dashPatterns[rank] ?? dashPatterns[dashPatterns.length - 1]}`
+  const topicProjectEdges = new Map<string, { topic: { key: string; label: string; y: number }; project: { project: Project; y: number }; rank: number }>()
+  graphEntries.forEach((entry) => {
+    if (!entry.project) return
+    const topic = topicNodes.get(normalize(entry.topic))
+    const project = projectNodes.get(entry.project.id)
+    if (!topic || !project) return
+
+    const key = `${topic.key}:${project.project.id}`
+    const existing = topicProjectEdges.get(key)
+    if (!existing || entry.rank < existing.rank) {
+      topicProjectEdges.set(key, { topic, project, rank: entry.rank })
+    }
+  })
+
+  const connections = [
+    ...Array.from(topicProjectEdges.values()).map(({ topic, project, rank }) =>
+      `<path d="M 145 ${topic.y} C 152 ${topic.y}, 156 ${project.y}, 163 ${project.y}" class="graph-line" style="${dashStyle(rank)}" />`
+    ),
+    ...graphEntries.flatMap((entry) => {
+      if (!entry.project) return []
+      const project = projectNodes.get(entry.project.id)
+      if (!project) return []
+      return [`<path d="M 328 ${project.y} C 336 ${project.y}, 339 ${entry.y}, 347 ${entry.y}" class="graph-line" style="${dashStyle(entry.rank)}" />`]
     })
+  ].join('')
 
-  const connectedTopicIndexes = topicLabels
-    .map((_, index) => index)
-    .filter((topicIndex) => graphExperts.some((expert) => expert.targetIndex === topicIndex))
-  const projectNodes = connectedTopicIndexes.map((topicIndex, index) => ({
-    topicIndex,
-    x: 430,
-    y: connectedTopicIndexes.length === 1 ? 180 : 48 + (index * 264) / (connectedTopicIndexes.length - 1),
-    label: topicLabels[topicIndex]
-  }))
+  const topicLabelsSvg = Array.from(topicNodes.values()).map((node) => `
+    <g>
+      <rect x="8" y="${node.y - 19}" width="137" height="38" rx="12" class="graph-topic-node" />
+      <text x="76" y="${node.y + 4}" class="graph-topic-label">${escapeHtml(node.label)}</text>
+    </g>
+  `).join('')
 
-  const graphTop = 48
-  const graphBottom = 312
-  const expertPositions = graphExperts.map((_, index) => ({
-    x: 112,
-    y: graphExperts.length === 1
-      ? (graphTop + graphBottom) / 2
-      : graphTop + (index * (graphBottom - graphTop)) / (graphExperts.length - 1)
-  }))
+  const projectLabelsSvg = Array.from(projectNodes.values()).map(({ project, y }) => {
+    const [projectLine1, projectLine2] = splitSvgLabel(project.name)
+    return `
+      <g>
+        <rect x="163" y="${y - 21}" width="165" height="42" rx="12" class="graph-project-node" />
+        <text x="245" y="${y - (projectLine2 ? 2 : -4)}" class="graph-project-label">${escapeHtml(projectLine1)}</text>
+        ${projectLine2 ? `<text x="245" y="${y + 11}" class="graph-project-label graph-project-label--secondary">${escapeHtml(projectLine2)}</text>` : ''}
+      </g>
+    `
+  }).join('')
 
-  const dashPatterns = ['none', '12 6', '7 6', '4 6', '1 5']
-  const connections = graphExperts
-    .map(({ originalIndex, targetIndex }, index) => {
-      if (targetIndex < 0) return ''
-      const start = expertPositions[index]
-      const end = projectNodes.find((node) => node.topicIndex === targetIndex)
-      if (!end) return ''
-      const path = `M ${start.x + 29} ${start.y} C 220 ${start.y}, 320 ${end.y}, ${end.x - 25} ${end.y}`
-      const dashPattern = dashPatterns[originalIndex] ?? dashPatterns[dashPatterns.length - 1]
-      return `<path d="${path}" class="graph-line" style="stroke-dasharray:${dashPattern}" />`
-    })
-    .join('')
+  const personNodesSvg = graphEntries.map((entry, index) => {
+    const confidenceClass = entry.expert.confidence >= 80
+      ? 'graph-confidence-high'
+      : entry.expert.confidence >= 65
+        ? 'graph-confidence-medium'
+        : 'graph-confidence-low'
+    const radius = 16 + entry.expert.confidence * 0.07
+    const recencyText = entry.activity.score === null
+      ? 'Recency unavailable'
+      : `Recency ${entry.activity.score}`
 
-  const expertNodes = graphExperts
-    .map(({ expert, originalIndex }, index) => {
-      const point = expertPositions[index]
-      const ringClass = originalIndex === 0 ? 'graph-node graph-node--primary' : 'graph-node'
-      return `
-        <g>
-          <circle cx="${point.x}" cy="${point.y}" r="28" class="${ringClass}" />
-          <text x="${point.x}" y="${point.y + 5}" class="graph-label">${escapeHtml(expert.employee.name.split(' ')[0])}</text>
-        </g>
-      `
-    })
-    .join('')
-
-  const projectLabelsSvg = projectNodes
-    .map(
-      (node) => `
-        <g>
-          <circle cx="${node.x}" cy="${node.y}" r="24" class="graph-node graph-node--project" />
-          <text x="${node.x}" y="${node.y + 4}" class="graph-project-label">${escapeHtml(node.label)}</text>
-        </g>
-      `
-    )
-    .join('')
+    return `
+      <g>
+        <defs>
+          <clipPath id="employee-photo-${index}">
+            <circle cx="366" cy="${entry.y}" r="${(radius - 1.5).toFixed(1)}" />
+          </clipPath>
+        </defs>
+        <image
+          href="/standard_pfp.png"
+          x="${(366 - radius + 1.5).toFixed(1)}"
+          y="${(entry.y - radius + 1.5).toFixed(1)}"
+          width="${((radius - 1.5) * 2).toFixed(1)}"
+          height="${((radius - 1.5) * 2).toFixed(1)}"
+          preserveAspectRatio="xMidYMid slice"
+          clip-path="url(#employee-photo-${index})"
+          aria-label="Profile photo for ${escapeHtml(entry.expert.employee.name)}"
+        />
+        <circle cx="366" cy="${entry.y}" r="${radius.toFixed(1)}" class="graph-person-node ${confidenceClass}" />
+        <text x="391" y="${entry.y - 7}" class="graph-person-name">${escapeHtml(entry.expert.employee.name.split(' ')[0])}</text>
+        <text x="391" y="${entry.y + 6}" class="graph-person-meta">${entry.expert.confidence}% confidence · ${recencyText}</text>
+        <text x="391" y="${entry.y + 18}" class="graph-person-activity">Last activity: ${escapeHtml(entry.activity.label)}</text>
+      </g>
+    `
+  }).join('')
 
   return `
-    <svg viewBox="0 0 520 360" aria-label="Expertise network graph" role="img">
+    <svg viewBox="0 0 520 280" aria-label="Knowledge paths showing topic, project, expert, confidence, recency, and team" role="img">
+      <text x="12" y="16" class="graph-column-label">TOPIC</text>
+      <text x="168" y="16" class="graph-column-label">PROJECT</text>
+      <text x="352" y="16" class="graph-column-label">TEAM</text>
+      ${teamClusters}
       ${connections}
+      ${topicLabelsSvg}
       ${projectLabelsSvg}
-      ${expertNodes}
+      ${personNodesSvg}
     </svg>
   `
 }
@@ -470,6 +574,67 @@ function renderInsights(experts: ExpertResult[], projects: Project[], question =
   renderExpertList(experts)
 }
 
+function updateSuggestedQuestions(
+  question: string,
+  experts: ExpertResult[],
+  projects: Project[]
+): void {
+  const buttons = document.querySelectorAll<HTMLButtonElement>('.prompt')
+  const queryWords = extractKeywords(question)
+  const suggestions: Array<{ label: string; question: string }> = []
+  const seenQuestions = new Set<string>()
+
+  const addSuggestion = (label: string, suggestedQuestion: string) => {
+    const key = normalize(suggestedQuestion)
+    if (suggestions.length >= buttons.length || seenQuestions.has(key)) return
+    seenQuestions.add(key)
+    suggestions.push({ label, question: suggestedQuestion })
+  }
+
+  const relatedProjects = projects
+    .map((project) => {
+      const keywordMatches = project.keywords.filter((keyword) =>
+        queryWords.some((word) => keywordsMatch(keyword, word))
+      ).length
+      const expertMatches = experts.filter((expert) => expert.employee.projects.includes(project.id)).length
+      return { project, keywordMatches, expertMatches }
+    })
+    .filter((item) => item.keywordMatches > 0 || item.expertMatches > 0)
+    .sort((left, right) =>
+      right.keywordMatches - left.keywordMatches || right.expertMatches - left.expertMatches
+    )
+
+  relatedProjects.forEach(({ project }) => {
+    addSuggestion(project.name, `Who has worked on ${project.name}?`)
+    const additionalKeyword = project.keywords.find((keyword) =>
+      !queryWords.some((word) => keywordsMatch(keyword, word))
+    )
+    if (additionalKeyword) {
+      const label = `${additionalKeyword.charAt(0).toUpperCase()}${additionalKeyword.slice(1)} expertise`
+      addSuggestion(label, `Who can help with ${additionalKeyword} for ${project.domain}?`)
+    }
+  })
+
+  experts.slice(0, 3).forEach((expert) => {
+    expert.employee.skills.forEach((skill) => {
+      if (queryWords.some((word) => keywordsMatch(skill, word))) return
+      addSuggestion(`${skill} expertise`, `Who else has experience with ${skill}?`)
+    })
+  })
+
+  const topic = queryWords.slice(0, 3).join(' ') || 'this topic'
+  addSuggestion(`Projects about ${topic}`, `What projects involve ${topic}?`)
+  addSuggestion(`More on ${topic}`, `Who else has experience with ${topic}?`)
+  addSuggestion(`Documents about ${topic}`, `Which documents cover ${topic}?`)
+
+  buttons.forEach((button, index) => {
+    const suggestion = suggestions[index]
+    if (!suggestion) return
+    button.textContent = suggestion.label
+    button.dataset.question = suggestion.question
+  })
+}
+
 async function initDashboard() {
   const app = document.querySelector<HTMLDivElement>('#app')
   if (!app) return
@@ -533,6 +698,7 @@ async function initDashboard() {
 
   const handleQuestion = (question: string, shouldClearInput = true) => {
     const experts = findExperts(question, employees, projects, documents)
+    updateSuggestedQuestions(question, experts, projects)
     const history = document.querySelector<HTMLDivElement>('#chat-history')
 
     if (experts.length === 0) {
@@ -585,6 +751,11 @@ async function initDashboard() {
   }
 
   input?.addEventListener('input', autoResizeTextarea)
+  input?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return
+    event.preventDefault()
+    form?.requestSubmit()
+  })
 
   promptButtons.forEach((button) => {
     button.addEventListener('click', () => {
