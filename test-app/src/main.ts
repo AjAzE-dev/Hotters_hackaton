@@ -282,7 +282,7 @@ async function initDashboard() {
 
         <form id="chat-form" class="chat-form">
           <label class="sr-only" for="question-input">Ask a question</label>
-          <input id="question-input" name="question" type="text" placeholder="Ask a question..." value="${escapeHtml(defaultQuestion)}" />
+          <input id="question-input" class="example-question-input" name="question" type="text" placeholder="Ask a question..." value="${escapeHtml(defaultQuestion)}" />
           <button type="submit">Ask</button>
         </form>
       </aside>
@@ -337,8 +337,6 @@ async function initDashboard() {
     if (!question) return
     handleQuestion(question, true)
   })
-
-  handleQuestion(defaultQuestion, false)
 }
 
 initDashboard().catch((error) => {

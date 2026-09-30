@@ -103,10 +103,11 @@ button, input {
 }
 
 .chat-history {
-  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-height: 120px;
+  max-height: 420px;
   overflow: auto;
   padding-right: 4px;
 }
@@ -207,6 +208,10 @@ button, input {
   color: var(--text-strong);
   padding: 0 16px;
   outline: none;
+}
+
+.example-question-input {
+  color: rgba(237, 244, 255, 0.6);
 }
 
 .chat-form button {
