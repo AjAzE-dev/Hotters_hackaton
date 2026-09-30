@@ -318,6 +318,7 @@ button, input {
 }
 
 .graph-line {
+  fill: none;
   stroke: rgba(124, 156, 255, 0.7);
   stroke-width: 2;
   stroke-dasharray: 8 8;

@@ -219,33 +219,77 @@ function getBestFirstContact(employee: Employee, employees: Employee[]): {
   }
 }
 
-function buildGraphMarkup(experts: ExpertResult[]): string {
-  const positions = [
-    { x: 120, y: 80 },
-    { x: 250, y: 120 },
-    { x: 390, y: 80 },
-    { x: 180, y: 240 },
-    { x: 350, y: 240 }
-  ]
+function buildGraphMarkup(experts: ExpertResult[], projects: Project[], question = ''): string {
+  const visibleExperts = experts.slice(0, 5)
+  const queryWords = extractKeywords(question)
+  const relevantProjects = projects
+    .filter((project) => visibleExperts.some((expert) => expert.employee.projects.includes(project.id)))
+    .map((project) => {
+      const supportingExperts = visibleExperts.filter((expert) =>
+        expert.employee.projects.includes(project.id)
+      )
+      const keywordMatches = project.keywords.filter((keyword) =>
+        queryWords.some((word) => normalize(keyword).includes(word) || word.includes(normalize(keyword)))
+      ).length
 
-  const projectNodes = [
-    { x: 440, y: 110, label: 'Payroll' },
-    { x: 440, y: 200, label: 'Compliance' },
-    { x: 440, y: 290, label: 'Belgium' }
-  ]
+      return { project, supportingExperts, score: supportingExperts.length * 3 + keywordMatches }
+    })
 
-  const connections = experts
-    .map((_expert, index) => {
-      const start = positions[index] ?? positions[0]
-      const end = projectNodes[index % projectNodes.length]
-      return `<line x1="${start.x}" y1="${start.y}" x2="${end.x - 20}" y2="${end.y}" class="graph-line" />`
+  const topicScores = new Map<string, number>()
+  relevantProjects.forEach(({ project, score }) => {
+    topicScores.set(project.domain, (topicScores.get(project.domain) ?? 0) + score)
+  })
+  const topicLabels = [...topicScores.entries()]
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 4)
+    .map(([label]) => label)
+  const projectNodes = topicLabels.map((label, index) => ({
+    x: 430,
+    y: topicLabels.length === 1 ? 180 : 48 + (index * 264) / (topicLabels.length - 1),
+    label
+  }))
+
+  const graphExperts = visibleExperts
+    .map((expert, originalIndex) => ({
+      expert,
+      originalIndex,
+      targetIndex: topicLabels.findIndex((label) =>
+        relevantProjects.some(({ project, supportingExperts }) =>
+          project.domain === label && supportingExperts.some((supporter) =>
+            supporter.employee.name === expert.employee.name
+          )
+        )
+      )
+    }))
+    .sort((left, right) => {
+      const leftTarget = left.targetIndex < 0 ? Number.MAX_SAFE_INTEGER : left.targetIndex
+      const rightTarget = right.targetIndex < 0 ? Number.MAX_SAFE_INTEGER : right.targetIndex
+      return leftTarget - rightTarget || left.originalIndex - right.originalIndex
+    })
+
+  const graphTop = 48
+  const graphBottom = 312
+  const expertPositions = graphExperts.map((_, index) => ({
+    x: 112,
+    y: graphExperts.length === 1
+      ? (graphTop + graphBottom) / 2
+      : graphTop + (index * (graphBottom - graphTop)) / (graphExperts.length - 1)
+  }))
+
+  const connections = graphExperts
+    .map(({ targetIndex }, index) => {
+      if (targetIndex < 0) return ''
+      const start = expertPositions[index]
+      const end = projectNodes[targetIndex]
+      const path = `M ${start.x + 29} ${start.y} C 220 ${start.y}, 320 ${end.y}, ${end.x - 25} ${end.y}`
+      return `<path d="${path}" class="graph-line" />`
     })
     .join('')
 
-  const expertNodes = experts
-    .map((expert, index) => {
-      const point = positions[index] ?? positions[0]
-      const ringClass = index === 0 ? 'graph-node graph-node--primary' : 'graph-node'
+  const expertNodes = graphExperts
+    .map(({ expert, originalIndex }, index) => {
+      const point = expertPositions[index]
+      const ringClass = originalIndex === 0 ? 'graph-node graph-node--primary' : 'graph-node'
       return `
         <g>
           <circle cx="${point.x}" cy="${point.y}" r="28" class="${ringClass}" />
@@ -255,11 +299,11 @@ function buildGraphMarkup(experts: ExpertResult[]): string {
     })
     .join('')
 
-  const projectLabels = projectNodes
+  const projectLabelsSvg = projectNodes
     .map(
       (node) => `
         <g>
-          <circle cx="${node.x}" cy="${node.y}" r="22" class="graph-node graph-node--project" />
+          <circle cx="${node.x}" cy="${node.y}" r="24" class="graph-node graph-node--project" />
           <text x="${node.x}" y="${node.y + 4}" class="graph-project-label">${escapeHtml(node.label)}</text>
         </g>
       `
@@ -269,7 +313,7 @@ function buildGraphMarkup(experts: ExpertResult[]): string {
   return `
     <svg viewBox="0 0 520 360" aria-label="Expertise network graph" role="img">
       ${connections}
-      ${projectLabels}
+      ${projectLabelsSvg}
       ${expertNodes}
     </svg>
   `
@@ -374,10 +418,10 @@ function renderChat(question: string, experts: ExpertResult[]) {
   })
 }
 
-function renderInsights(experts: ExpertResult[]) {
+function renderInsights(experts: ExpertResult[], projects: Project[], question = '') {
   const graphWrap = document.querySelector<HTMLDivElement>('#graph-wrap')
   if (graphWrap) {
-    graphWrap.innerHTML = buildGraphMarkup(experts)
+    graphWrap.innerHTML = buildGraphMarkup(experts, projects, question)
   }
 
   const count = document.querySelector<HTMLSpanElement>('#result-count')
@@ -469,10 +513,10 @@ async function initDashboard() {
         }, 50)
       }
 
-      renderInsights([])
+      renderInsights([], projects, question)
     } else {
       renderChat(question, experts)
-      renderInsights(experts)
+      renderInsights(experts, projects, question)
       if (history) {
         window.setTimeout(() => {
           history.scrollTo({ top: history.scrollHeight, behavior: 'smooth' })
